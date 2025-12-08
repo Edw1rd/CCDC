@@ -1,9 +1,8 @@
 Write-Host "[*] Starting PowerShell Auditing Configuration..." -ForegroundColor Cyan
 
-
-# =================================================== #
-#  Safe registry set (prevents errors if key missing) #
-# =================================================== #
+# ============================================
+# Safe registry set (avoids errors if missing)
+# ============================================
 function Set-SafeRegistryValue {
     param(
         [string]$Path,
@@ -18,74 +17,60 @@ function Set-SafeRegistryValue {
     Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force
 }
 
-
-# ======================================== #
-# 1) ENABLE POWERSHELL SCRIPTBLOCK LOGGING #
-# Logs full text of every PS command       #
-# ======================================== #
+# =====================================================
+# 1) ENABLE POWERSHELL SCRIPTBLOCK LOGGING (CRITICAL)
+# =====================================================
 Write-Host "[*] Enabling ScriptBlock Logging..." -ForegroundColor Yellow
 
-Set-SafeRegistryValue `
-    -Path "HKLM:\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" `
-    -Name "ScriptBlockLogging" `
-    -Value 1
+$SBLPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging"
+Set-SafeRegistryValue -Path $SBLPath -Name "EnableScriptBlockLogging" -Value 1
 
 Write-Host "[+] ScriptBlock Logging enabled." -ForegroundColor Green
 
 
-# ============================================ #
-# 2) ENABLE MODULE LOGGING                     #
-# Logs what PowerShell modules attackers load  #
-# ============================================ #
+# =====================================================
+# 2) ENABLE MODULE LOGGING
+# =====================================================
 Write-Host "[*] Enabling Module Logging..." -ForegroundColor Yellow
 
-Set-SafeRegistryValue `
-    -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" `
-    -Name "EnableModuleLogging" `
-    -Value 1
+$MLPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging"
+Set-SafeRegistryValue -Path $MLPath -Name "EnableModuleLogging" -Value 1
 
 Write-Host "[+] Module Logging enabled." -ForegroundColor Green
 
 
-# ==========================================================
-# 3) ENABLE POWERSHELL TRANSCRIPTION (OPTIONAL BUT USEFUL)
-# Captures full PowerShell sessions to a folder
-# ==========================================================
+# =====================================================
+# 3) ENABLE TRANSCRIPTION LOGGING
+# =====================================================
+Write-Host "[*] Enabling PowerShell Transcription..." -ForegroundColor Yellow
+
 $TranscriptPath = "C:\PS_Transcript"
 
 if (-not (Test-Path $TranscriptPath)) {
     New-Item -ItemType Directory -Path $TranscriptPath | Out-Null
 }
 
-Write-Host "[*] Enabling PowerShell Transcription..." -ForegroundColor Yellow
-
-Set-SafeRegistryValue `
-    -Path "HKLM:\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" `
-    -Name "EnableTranscripting" `
-    -Value 1
-
-Set-SafeRegistryValue `
-    -Path "HKLM:\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" `
-    -Name "OutputDirectory" `
-    -Value $TranscriptPath
+$TransPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription"
+Set-SafeRegistryValue -Path $TransPath -Name "EnableTranscripting" -Value 1
+Set-SafeRegistryValue -Path $TransPath -Name "OutputDirectory" -Value $TranscriptPath
 
 Write-Host "[+] PowerShell Transcription enabled." -ForegroundColor Green
 
 
-# ==========================================================
-# 4) GENERATE TEST EVENT TO PROVE LOGGING IS ACTIVE
-# You will see this in Event Viewer → PowerShell → Operational → Event ID 4104
-# ==========================================================
+# =====================================================
+# 4) GENERATE TEST EVENT (SAFE, NO ERRORS)
+# =====================================================
 Write-Host "[*] Generating test ScriptBlock event..." -ForegroundColor Yellow
-$TestCommand = "Test-Logging-Event: $(Get-Date)"
-Invoke-Expression $TestCommand
+
+# This WILL appear in Event ID 4104 logs
+"Test ScriptBlock Logging Event $(Get-Date)" | Out-Null
 
 Write-Host "[+] Test ScriptBlock event generated." -ForegroundColor Green
 
 
-# ==========================================================
+# =====================================================
 # 5) DISPLAY INSTRUCTIONS
-# ==========================================================
+# =====================================================
 Write-Host ""
 Write-Host "====================================================" -ForegroundColor Cyan
 Write-Host " PowerShell Logging Successfully Enabled!" -ForegroundColor Green
