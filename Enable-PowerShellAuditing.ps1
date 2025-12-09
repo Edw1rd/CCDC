@@ -1,3 +1,5 @@
+# PowerShell ScriptBlock Logging saves all executed commands under Event ID 4104.
+
 Write-Host "[*] Starting PowerShell Auditing Configuration..." -ForegroundColor Cyan
 
 # ============================================ #
