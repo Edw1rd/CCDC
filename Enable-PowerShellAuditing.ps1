@@ -34,3 +34,11 @@ Set-SafeRegistryValue -Path $TransPath -Name "OutputDirectory" -Value $Transcrip
 
 # Generate test ScriptBlock event silently
 "Test ScriptBlock Logging Event $(Get-Date)" | Out-Null
+
+# Create confirmation file
+$ConfirmFile = "C:\PS_Transcript\AuditEnabled.txt"
+"PowerShell auditing enabled on $(Get-Date)" | Out-File -FilePath $ConfirmFile -Encoding UTF8 -Force
+
+# Final confirmation message
+Write-Host "[OK] PowerShell auditing successfully enabled." -ForegroundColor Green
+Write-Host "[OK] Confirmation file created: C:\PS_Transcript\AuditEnabled.txt" -ForegroundColor Green
