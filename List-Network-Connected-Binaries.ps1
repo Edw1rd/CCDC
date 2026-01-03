@@ -1,3 +1,8 @@
+# ================================
+# CCDC - Network Connection Audit
+# Lists processes with network activity
+# ================================
+
 $OutputDir = "C:\CCDC"
 $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $OutTxt = "$OutputDir\NetworkConnections_$Timestamp.txt"
@@ -7,34 +12,33 @@ if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir | Out-Null
 }
 
-function Safe([object]$v) {
-    if ($null -eq $v) { return "" }
-    return [string]$v
-}
+function Get-ProcessInfo {
+    param([int]$Pid)
 
-function Get-ProcessInfo($Pid) {
     $info = @{
-        Name = ""
-        Path = ""
-        Cmd  = ""
-        User = ""
-        Parent = ""
+        Name      = ""
+        Path      = ""
+        Cmd       = ""
+        User      = ""
+        Parent    = ""
         Signature = ""
     }
 
     try {
-        $p = Get-Process -Id $Pid -ErrorAction Stop
-        $info.Name = $p.ProcessName
-        try { $info.Path = $p.Path } catch {}
-    } catch { return $info }
+        $proc = Get-Process -Id $Pid -ErrorAction Stop
+        $info.Name = $proc.ProcessName
+        try { $info.Path = $proc.Path } catch {}
+    } catch {
+        return $info
+    }
 
     try {
-        $c = Get-CimInstance Win32_Process -Filter "ProcessId=$Pid"
-        $info.Cmd = $c.CommandLine
-        $info.Parent = $c.ParentProcessId
+        $cim = Get-CimInstance Win32_Process -Filter "ProcessId=$Pid"
+        $info.Cmd = $cim.CommandLine
+        $info.Parent = $cim.ParentProcessId
 
         try {
-            $owner = Invoke-CimMethod -InputObject $c -MethodName GetOwner
+            $owner = Invoke-CimMethod -InputObject $cim -MethodName GetOwner
             if ($owner.ReturnValue -eq 0) {
                 $info.User = "$($owner.Domain)\$($owner.User)"
             }
@@ -53,9 +57,9 @@ function Get-ProcessInfo($Pid) {
 
 $results = @()
 
-# TCP connections
+# -------- TCP CONNECTIONS --------
 foreach ($c in Get-NetTCPConnection -ErrorAction SilentlyContinue) {
-    $pinfo = Get-ProcessInfo $c.OwningProcess
+    $pinfo = Get-ProcessInfo -Pid $c.OwningProcess
 
     $results += [pscustomobject]@{
         Protocol      = "TCP"
@@ -74,9 +78,9 @@ foreach ($c in Get-NetTCPConnection -ErrorAction SilentlyContinue) {
     }
 }
 
-# UDP endpoints
+# -------- UDP ENDPOINTS --------
 foreach ($u in Get-NetUDPEndpoint -ErrorAction SilentlyContinue) {
-    $pinfo = Get-ProcessInfo $u.OwningProcess
+    $pinfo = Get-ProcessInfo -Pid $u.OwningProcess
 
     $results += [pscustomobject]@{
         Protocol      = "UDP"
@@ -95,7 +99,7 @@ foreach ($u in Get-NetUDPEndpoint -ErrorAction SilentlyContinue) {
     }
 }
 
-# Save reports
+# ---------- SAVE FILES ----------
 $results | Export-Csv -Path $OutCsv -NoTypeInformation -Encoding UTF8
 
 "==== Network Activity Report ====" | Out-File $OutTxt
@@ -116,5 +120,5 @@ foreach ($r in $results) {
 }
 
 Write-Host "[OK] Network inspection completed."
-Write-Host "[OK] TXT: $OutTxt"
-Write-Host "[OK] CSV: $OutCsv"
+Write-Host "[OK] TXT saved to: $OutTxt"
+Write-Host "[OK] CSV saved to: $OutCsv"
