@@ -13,7 +13,7 @@ if (-not (Test-Path $OutputDir)) {
 }
 
 function Get-ProcessInfo {
-    param([int]$Pid)
+    param([int]$ProcessId)
 
     $info = @{
         Name      = ""
