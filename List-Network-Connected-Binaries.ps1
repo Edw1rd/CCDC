@@ -1,5 +1,5 @@
 # ================================
-# CCDC - Network Connection Audit
+# Network Connection Audit
 # Lists processes with network activity
 # ================================
 
@@ -57,7 +57,7 @@ function Get-ProcessInfo {
 
 $results = @()
 
-# -------- TCP CONNECTIONS --------
+#  TCP CONNECTIONS
 foreach ($c in Get-NetTCPConnection -ErrorAction SilentlyContinue) {
     $pinfo = Get-ProcessInfo -Pid $c.OwningProcess
 
@@ -78,7 +78,7 @@ foreach ($c in Get-NetTCPConnection -ErrorAction SilentlyContinue) {
     }
 }
 
-# -------- UDP ENDPOINTS --------
+# UDP ENDPOINTS
 foreach ($u in Get-NetUDPEndpoint -ErrorAction SilentlyContinue) {
     $pinfo = Get-ProcessInfo -Pid $u.OwningProcess
 
@@ -99,7 +99,7 @@ foreach ($u in Get-NetUDPEndpoint -ErrorAction SilentlyContinue) {
     }
 }
 
-# ---------- SAVE FILES ----------
+# SAVE FILES
 $results | Export-Csv -Path $OutCsv -NoTypeInformation -Encoding UTF8
 
 "==== Network Activity Report ====" | Out-File $OutTxt
